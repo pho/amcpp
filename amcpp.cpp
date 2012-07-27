@@ -78,6 +78,7 @@ void amcpp::on_playButton_clicked()
 void amcpp::amHandshake(){
     if ( !QCA::isSupported("sha256") ){
         ui->statusBar->showMessage("sha256 is not supported. Exiting...\n");
+        //burn da haus
         return;
     }
     else {
@@ -218,7 +219,6 @@ void amcpp::stop(){
 
 void amcpp::nextSong(){
 
-    printf("Next song\n");
     if (lastSongIndex == -1) return;
 
     if( ui->treeWidget->size().height() > ++lastSongIndex){
