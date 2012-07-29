@@ -1,5 +1,6 @@
 #include "amcpp.h"
 #include "ui_amcpp.h"
+#include "configdialog.h"
 #include <phonon/mediaobject.h>
 #include <QList>
 #include <QFileDialog>
@@ -13,8 +14,6 @@ amcpp::amcpp(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::amcpp)
 {
-    QCA::Initializer init;
-
     authToken = "noauth";
     lastSongIndex = -1;
 
@@ -36,8 +35,6 @@ amcpp::amcpp(QWidget *parent) :
 
 
     connect(mediaObject, SIGNAL(finished()), this, SLOT(nextSong()));
-
-    audioOutput->setVolume(0.4);
 
 }
 
@@ -76,6 +73,11 @@ void amcpp::on_playButton_clicked()
 
 
 void amcpp::amHandshake(){
+
+    QCA::Initializer init;
+
+    authToken = "noauth";
+
     if ( !QCA::isSupported("sha256") ){
         ui->statusBar->showMessage("sha256 is not supported. Exiting...\n");
         //burn da haus
@@ -83,20 +85,29 @@ void amcpp::amHandshake(){
     }
     else {
         ui->statusBar->showMessage("sha256 is supported :D\n");
-
         ui->statusBar->showMessage("Creating handshake\n");
+
+        QSettings settings("amcpp", "amcpp");
+
+        QString amurl = settings.value("amUrl").toString();
+        QString user = settings.value("username").toString();
+        QCA::SecureArray pass(settings.value("streamPass").toByteArray());
+
+
+        //TODO Redo this with SecureArray
 
         char key[80];
         char timestamp[11];
         snprintf(timestamp, 11, "%ld", time(0));
 
-        QString lol(QCA::Hash("sha256").hash("test").toByteArray().toHex());
+
+        QString lol(QCA::Hash("sha256").hash(pass).toByteArray().toHex());
 
         snprintf(key, 80, "%s%s", timestamp, qPrintable(lol));
 
         QString passphrase = QCA::Hash("sha256").hashToString( key );
 
-        QUrl url( QString("http://ampache/server/xml.server.php?action=handshake&auth=%1&timestamp=%2&version=350001&user=test").arg(qPrintable(passphrase), timestamp)) ;
+        QUrl url( QString("%3/server/xml.server.php?action=handshake&auth=%1&timestamp=%2&version=350001&user=%4").arg(qPrintable(passphrase), timestamp, amurl, user )) ;
         QNetworkRequest request(url);
         reply = manager.get(request);
 
@@ -124,8 +135,11 @@ void amcpp::handshakeReply()
 
 void amcpp::on_searchButton_clicked()
 {
+    QSettings settings("amcpp", "amcpp");
+    QString amurl = settings.value("amUrl").toString();
+
     ui->lineEdit->setDisabled(true);
-    QUrl url( QString("http://ampache/server/xml.server.php?action=search_songs&auth=%1&filter=%2").arg(authToken, ui->lineEdit->text())) ;
+    QUrl url( QString("%3/server/xml.server.php?action=search_songs&auth=%1&filter=%2").arg(authToken, ui->lineEdit->text(), amurl)) ;
     QNetworkRequest request(url);
     reply = manager.get(request);
 
@@ -207,9 +221,6 @@ void amcpp::changeSong(QString str){
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
 
-    if(ui->seekSlider->isEnabled())
-        ui->statusBar->showMessage("SeekEnabled");
-
 }
 
 void amcpp::stop(){
@@ -234,4 +245,19 @@ void amcpp::nextSong(){
     else{
         lastSongIndex = -1;
     }
+}
+
+void amcpp::on_actionConfigure_triggered()
+{
+    configDialog c;
+    c.show();
+
+    if (c.exec() == 1)
+        amHandshake();
+
+}
+
+void amcpp::on_actionQuit_triggered()
+{
+;
 }

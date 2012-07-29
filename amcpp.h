@@ -17,6 +17,7 @@
 #include <QtXml/QDomDocument>
 #include <QtCrypto/QtCrypto>
 #include <QTreeWidgetItem>
+#include <QSettings>
 
 namespace Ui {
     class amcpp;
@@ -46,6 +47,10 @@ private slots:
     void on_searchButton_clicked();
 
     void on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column);
+
+    void on_actionConfigure_triggered();
+
+    void on_actionQuit_triggered();
 
 private:
     Ui::amcpp *ui;

@@ -12,8 +12,11 @@ TEMPLATE = app
 LIBS += -lqca
 
 SOURCES += main.cpp\
-        amcpp.cpp
+        amcpp.cpp \
+    configdialog.cpp
 
-HEADERS  += amcpp.h
+HEADERS  += amcpp.h \
+    configdialog.h
 
-FORMS    += amcpp.ui
+FORMS    += amcpp.ui \
+    configdialog.ui
