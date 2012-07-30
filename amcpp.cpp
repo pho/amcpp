@@ -65,15 +65,10 @@ void amcpp::on_playButton_clicked()
         pause();
     }
     else{
-        if (mediaObject->state() == Phonon::PausedState)
-            play();
-        else{
-            if(ui->treeWidget->children().count() <= 0) return;
-//            lastSongIndex = 0;
-//            changeSong(ui->treeWidget->itemAt(0, 0)->text(2));
-        }
+        play();
     }
 }
+
 
 
 void amcpp::amHandshake(){
@@ -103,7 +98,6 @@ void amcpp::amHandshake(){
         char key[80];
         char timestamp[11];
         snprintf(timestamp, 11, "%ld", time(0));
-
 
         QString lol(QCA::Hash("sha256").hash(pass).toByteArray().toHex());
 
@@ -184,10 +178,11 @@ void amcpp::searchReply()
         ui->treeWidget->addTopLevelItem(item);
     }
 
+    lastSongIndex = -1;
     ui->lineEdit->setEnabled(true);
 }
 
-void amcpp::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column)
+void amcpp::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
     stop();
 
@@ -196,6 +191,7 @@ void amcpp::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column)
     currentUrl = item->text(2);
 
     lastSongIndex = ui->treeWidget->indexOfTopLevelItem(item);
+    qDebug() << "Clicked index:"  << lastSongIndex;
     changeSong(item->text(2));
 
     play();
@@ -203,8 +199,12 @@ void amcpp::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column)
 }
 
 void amcpp::play(){
-    mediaObject->play();
-    ui->playButton->setText("Pause");
+    if (lastSongIndex == -1)
+        nextSong();
+    else {
+        mediaObject->play();
+        ui->playButton->setText("Pause");
+    }
 }
 
 
@@ -222,9 +222,7 @@ void amcpp::changeSong(QString str){
 
     mediaObject->setTickInterval(1);
 
-    qDebug() << mediaObject->totalTime();
-//    ui->horizontalSlider->setMaximum(mediaObject->totalTime());
-//    connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(updateSlider(qint64)));
+    qDebug() << "Next Song:" << str << "totaltime" <<  mediaObject->totalTime();
 
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
@@ -241,19 +239,20 @@ void amcpp::stop(){
 
 void amcpp::nextSong(){
 
-    if (lastSongIndex == -1) return;
+    if( ui->treeWidget->topLevelItemCount() > ++lastSongIndex){
+        qDebug() << "next song index: " << lastSongIndex;
 
-    if( ui->treeWidget->size().height() > ++lastSongIndex){
+        currentTitle = ui->treeWidget->topLevelItem(lastSongIndex)->text(0);
+        currentArtist = ui->treeWidget->topLevelItem(lastSongIndex)->text(1);
+        currentUrl = ui->treeWidget->topLevelItem(lastSongIndex)->text(2);
 
-        currentTitle = ui->treeWidget->itemAt(lastSongIndex,2)->text(0);
-        currentArtist = ui->treeWidget->itemAt(lastSongIndex,2)->text(1);
-        currentUrl = ui->treeWidget->itemAt(lastSongIndex,2)->text(2);
-
+        qDebug() << "next song url" << currentUrl;
         changeSong(currentUrl);
 
         play();
     }
     else{
+        stop();
         lastSongIndex = -1;
     }
 }
