@@ -8,8 +8,6 @@
 #include <cstdlib>
 #include <iostream>
 
-
-
 amcpp::amcpp(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::amcpp)
@@ -18,13 +16,13 @@ amcpp::amcpp(QWidget *parent) :
     lastSongIndex = -1;
 
     audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
-    audioOutput->setVolume(0.5);
 
     mediaObject = new Phonon::MediaObject(this);
-    mediaSource = new Phonon::MediaSource(QString("http://ampache/play/index.php?ssid=cd201228ee4a492ae74cd7db60822eda&oid=555&uid=2&name=/SoulEye%20-%20Path%20complete.mp3"));
+    mediaSource = new Phonon::MediaSource(QString("/home/pho/Music/Eluveitie/Slania/Inis Mona.mp3"));
     mediaObject->setCurrentSource(*mediaSource);
 
     Phonon::createPath(mediaObject, audioOutput);
+    audioOutput->setVolume(0.5);
 
     ui->setupUi(this);
 
@@ -33,8 +31,14 @@ amcpp::amcpp(QWidget *parent) :
 
     amHandshake();
 
-
     connect(mediaObject, SIGNAL(finished()), this, SLOT(nextSong()));
+
+ // connect(mediaObject, SIGNAL(totalTimeChanged(qint64)), ui->totalLabel, SLOT(setNum(int)));
+
+    connect(mediaObject, SIGNAL(bufferStatus(int)), ui->progressBar, SLOT(setValue(int)));
+
+    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),
+            this, SLOT(checkStatus(Phonon::State,Phonon::State)));
 
 }
 
@@ -216,10 +220,17 @@ void amcpp::changeSong(QString str){
     mediaSource = new Phonon::MediaSource(str);
     mediaObject->setCurrentSource(*mediaSource);
 
-   // ui->seekSlider->setMediaObject(mediaObject);
+    mediaObject->setTickInterval(1);
+
+    qDebug() << mediaObject->totalTime();
+//    ui->horizontalSlider->setMaximum(mediaObject->totalTime());
+//    connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(updateSlider(qint64)));
 
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
+    ui->titleLabel->setText(currentTitle + " - " + currentArtist);
+    ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000));
+    //ui->totalLabel->setTextFormat();
 
 }
 
@@ -254,10 +265,9 @@ void amcpp::on_actionConfigure_triggered()
 
     if (c.exec() == 1)
         amHandshake();
-
 }
 
-void amcpp::on_actionQuit_triggered()
-{
-;
+void amcpp::checkStatus(Phonon::State act , Phonon::State prev){
+    qDebug() << QString("%1 -> %2").arg(prev).arg(act) ;
 }
+

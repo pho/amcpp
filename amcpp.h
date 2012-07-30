@@ -41,16 +41,15 @@ private slots:
     void changeSong(QString);
     void nextSong();
 
+    void checkStatus(Phonon::State, Phonon::State);
+
     void on_playButton_clicked();
     void handshakeReply();
     void searchReply();
     void on_searchButton_clicked();
 
     void on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column);
-
     void on_actionConfigure_triggered();
-
-    void on_actionQuit_triggered();
 
 private:
     Ui::amcpp *ui;
