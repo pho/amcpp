@@ -35,8 +35,6 @@ amcpp::amcpp(QWidget *parent) :
 
  // connect(mediaObject, SIGNAL(totalTimeChanged(qint64)), ui->totalLabel, SLOT(setNum(int)));
 
-    connect(mediaObject, SIGNAL(bufferStatus(int)), ui->progressBar, SLOT(setValue(int)));
-
     connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),
             this, SLOT(checkStatus(Phonon::State,Phonon::State)));
 
@@ -68,8 +66,6 @@ void amcpp::on_playButton_clicked()
         play();
     }
 }
-
-
 
 void amcpp::amHandshake(){
 
@@ -113,6 +109,7 @@ void amcpp::amHandshake(){
                 this, SLOT(handshakeReply()));
     }
 }
+
 
 void amcpp::handshakeReply()
 {
@@ -238,6 +235,7 @@ void amcpp::stop(){
 }
 
 void amcpp::nextSong(){
+    stop();
 
     if( ui->treeWidget->topLevelItemCount() > ++lastSongIndex){
         qDebug() << "next song index: " << lastSongIndex;
@@ -252,7 +250,6 @@ void amcpp::nextSong(){
         play();
     }
     else{
-        stop();
         lastSongIndex = -1;
     }
 }
@@ -270,3 +267,104 @@ void amcpp::checkStatus(Phonon::State act , Phonon::State prev){
     qDebug() << QString("%1 -> %2").arg(prev).arg(act) ;
 }
 
+void amcpp::loadCollection(){
+    ui->artistTree->clear();
+
+    ui->statusBar->showMessage("Loading full collection...");
+
+    QSettings settings("amcpp", "amcpp");
+    QString amurl = settings.value("amUrl").toString();
+
+    QUrl url( QString("%2/server/xml.server.php?action=songs&auth=%1").arg(authToken, amurl)) ;
+    QNetworkRequest request(url);
+    reply = manager.get(request);
+
+    connect(reply, SIGNAL(finished()),
+            this, SLOT(loadCollectionReply()));
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64, qint64)));
+}
+
+void amcpp::loadCollectionReply(){
+    QDomDocument e;
+    e.setContent(reply->readAll());
+    int c = 0;
+
+    QDomElement el = e.firstChildElement();
+
+    for( int i = 0; i < el.childNodes().count(); i++ ){
+        QDomElement song = el.childNodes().at(i).toElement();
+        QString artist, album, title, url;
+
+        for ( int j = 0; j < song.childNodes().count(); j++){
+            QString tag = song.childNodes().at(j).toElement().tagName();
+
+            if (tag =="title")
+                title = song.childNodes().at(j).toElement().text();
+
+            if (tag == "artist")
+                artist = song.childNodes().at(j).toElement().text();
+
+            if (tag == "url")
+                url = song.childNodes().at(j).toElement().text();
+
+            if (tag == "album")
+                album = song.childNodes().at(j).toElement().text();
+
+        }
+
+        QTreeWidgetItem *item = new QTreeWidgetItem;
+        item->setText(0, title);
+        item->setText(1, url);
+
+        QTreeWidgetItem *Artist, *Album;
+        QList<QTreeWidgetItem *> rArtist = ui->artistTree->findItems(artist, Qt::MatchExactly);
+
+        if(rArtist.count() < 1){
+            Artist = new QTreeWidgetItem(QStringList(artist));
+            ui->artistTree->addTopLevelItem(Artist);
+        }
+        else{
+            Artist = rArtist.at(0);
+        }
+
+//        QList<QTreeWidgetItem *> rAlbum = Artist->treeWidget()->children() album);
+
+//        if(rAlbum.count() < 1){
+//            qDebug() << "Artist" << artist << "." << album << "album not found";
+//            Album = new QTreeWidgetItem(QStringList(album));
+//            Artist->addChild(Album);
+//        }
+//        else{
+//            qDebug() << "Artist" << artist << "." << album << "album";
+//            Album = rAlbum.at(0);
+//        }
+
+        bool found = false;
+        for( int i = 0; i < Artist->childCount(); i++){
+            if(Artist->child(i)->text(0) == album){
+                Artist->child(i)->addChild(item);
+                found = true;
+            }
+        }
+        if (!found){
+            Album = new QTreeWidgetItem(QStringList(album));
+            Album->addChild(item);
+            Artist->addChild(Album);
+        }
+
+        ui->statusBar->showMessage(QString("Scanning %1 songs").arg(c++));
+    }
+    ui->artistTree->sortItems(0, Qt::AscendingOrder);
+    ui->statusBar->showMessage(QString("Collection loaded. %1 songs.").arg(ui->artistTree->children().count()));
+}
+
+void amcpp::downloadProgress(qint64 received, qint64 total){
+    ui->statusBar->showMessage(QString("Downloading collection... %1 / %2").arg(received/1024).arg(total));
+}
+
+void amcpp::on_loadCollectionButton_clicked()
+{
+    ui->loadCollectionButton->setDisabled(true);
+    loadCollection();
+    ui->loadCollectionButton->setDisabled(false);
+}

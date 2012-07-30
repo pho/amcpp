@@ -43,6 +43,9 @@ private slots:
 
     void checkStatus(Phonon::State, Phonon::State);
 
+    void loadCollection();
+    void loadCollectionReply();
+    void downloadProgress(qint64, qint64);
     void on_playButton_clicked();
     void handshakeReply();
     void searchReply();
@@ -50,6 +53,7 @@ private slots:
 
     void on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column);
     void on_actionConfigure_triggered();
+    void on_loadCollectionButton_clicked();
 
 private:
     Ui::amcpp *ui;
