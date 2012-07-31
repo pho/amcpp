@@ -365,7 +365,8 @@ void amcpp::loadCollectionFromFile(){
                 artist = song.childNodes().at(j).toElement().text();
 
             if (tag == "url")
-                url = song.childNodes().at(j).toElement().text();
+                url = song.childNodes().at(j).toElement().text().replace(
+                            "ssid=.*&", "ssid=" + authToken + "&");
 
             if (tag == "album")
                 album = song.childNodes().at(j).toElement().text();
