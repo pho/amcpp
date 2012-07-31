@@ -18,6 +18,7 @@
 #include <QtCrypto/QtCrypto>
 #include <QTreeWidgetItem>
 #include <QSettings>
+#include <QFile>
 
 namespace Ui {
     class amcpp;
@@ -45,15 +46,21 @@ private slots:
 
     void loadCollection();
     void loadCollectionReply();
+    void loadCollectionFromFile();
+    void saveCollection(QByteArray);
+    QFile* getCollectionFile();
     void downloadProgress(qint64, qint64);
     void on_playButton_clicked();
     void handshakeReply();
     void searchReply();
     void on_searchButton_clicked();
 
-    void on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column);
+    void on_playlistTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
     void on_actionConfigure_triggered();
     void on_loadCollectionButton_clicked();
+
+    void on_searchTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
+    void on_artistTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
     Ui::amcpp *ui;

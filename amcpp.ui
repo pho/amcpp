@@ -56,9 +56,9 @@
    <widget class="QLabel" name="titleLabel">
     <property name="geometry">
      <rect>
-      <x>116</x>
+      <x>56</x>
       <y>0</y>
-      <width>431</width>
+      <width>561</width>
       <height>21</height>
      </rect>
     </property>
@@ -68,7 +68,7 @@
      </font>
     </property>
     <property name="text">
-     <string/>
+     <string>amcpp</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
@@ -168,7 +168,7 @@
      <attribute name="label">
       <string>Search</string>
      </attribute>
-     <widget class="QTreeWidget" name="treeWidget">
+     <widget class="QTreeWidget" name="searchTree">
       <property name="geometry">
        <rect>
         <x>0</x>

@@ -120,6 +120,7 @@ void amcpp::handshakeReply()
     if (e.firstChildElement().firstChildElement().tagName() == "auth"){
         authToken = e.firstChildElement().firstChildElement().text();
         ui->statusBar->showMessage("Auth completed!");
+        loadCollectionFromFile();
     }
     else{
         ui->statusBar->showMessage("Auth invalid!!");
@@ -147,13 +148,14 @@ void amcpp::searchReply()
     QDomDocument e;
     e.setContent(reply->readAll());
 
-    ui->treeWidget->clear();
+    ui->searchTree->clear();
 
     QDomElement el = e.firstChildElement();
 
     for( int i = 0; i < el.childNodes().count(); i++ ){
         QDomElement song = el.childNodes().at(i).toElement();
         QString title, artist, url;
+
 
         for ( int j = 0; j < song.childNodes().count(); j++){
             QString tag = song.childNodes().at(j).toElement().tagName();
@@ -172,22 +174,29 @@ void amcpp::searchReply()
         item->setText(0, title);
         item->setText(1, artist);
         item->setText(2, url);
-        ui->treeWidget->addTopLevelItem(item);
+        ui->searchTree->addTopLevelItem(item);
     }
 
-    lastSongIndex = -1;
     ui->lineEdit->setEnabled(true);
 }
 
-void amcpp::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
+void amcpp::on_playlistTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
     stop();
+
+    if(lastSongIndex >= 0){
+        QFont font;
+        font.setBold(false);
+        qDebug() << lastSongIndex << "bold false";
+        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
+        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
+    }
 
     currentTitle = item->text(0);
     currentArtist = item->text(1);
     currentUrl = item->text(2);
 
-    lastSongIndex = ui->treeWidget->indexOfTopLevelItem(item);
+    lastSongIndex = ui->playlistTree->indexOfTopLevelItem(item);
     qDebug() << "Clicked index:"  << lastSongIndex;
     changeSong(item->text(2));
 
@@ -224,8 +233,14 @@ void amcpp::changeSong(QString str){
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
     ui->titleLabel->setText(currentTitle + " - " + currentArtist);
-    ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000));
-    //ui->totalLabel->setTextFormat();
+    ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000)); //QTime
+
+//    if(lastSongIndex >= 0){
+//        QFont font;
+//        font.setBold(true);
+//        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
+//        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
+//    }
 
 }
 
@@ -237,12 +252,21 @@ void amcpp::stop(){
 void amcpp::nextSong(){
     stop();
 
-    if( ui->treeWidget->topLevelItemCount() > ++lastSongIndex){
+    if(lastSongIndex >= 0){
+        QFont font;
+        font.setBold(false);
+        qDebug() << lastSongIndex << "bold false";
+        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
+        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
+    }
+
+
+    if( ui->playlistTree->topLevelItemCount() > ++lastSongIndex){
         qDebug() << "next song index: " << lastSongIndex;
 
-        currentTitle = ui->treeWidget->topLevelItem(lastSongIndex)->text(0);
-        currentArtist = ui->treeWidget->topLevelItem(lastSongIndex)->text(1);
-        currentUrl = ui->treeWidget->topLevelItem(lastSongIndex)->text(2);
+        currentTitle = ui->playlistTree->topLevelItem(lastSongIndex)->text(0);
+        currentArtist = ui->playlistTree->topLevelItem(lastSongIndex)->text(1);
+        currentUrl = ui->playlistTree->topLevelItem(lastSongIndex)->text(2);
 
         qDebug() << "next song url" << currentUrl;
         changeSong(currentUrl);
@@ -264,11 +288,28 @@ void amcpp::on_actionConfigure_triggered()
 }
 
 void amcpp::checkStatus(Phonon::State act , Phonon::State prev){
-    qDebug() << QString("%1 -> %2").arg(prev).arg(act) ;
+    qDebug() << QString("%1 -> %2").arg(prev).arg(act);
+    if (act == Phonon::StoppedState){
+        if(lastSongIndex >= 0){
+            QFont font;
+            font.setBold(false);
+            qDebug() << lastSongIndex << "bold false";
+            ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
+            ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
+        }
+    }
+    else if(act == Phonon::PlayingState){
+        if(lastSongIndex >= 0){
+            QFont font;
+            font.setBold(true);
+            qDebug() << "Bold true" << lastSongIndex;
+            ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
+            ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
+        }
+    }
 }
 
 void amcpp::loadCollection(){
-    ui->artistTree->clear();
 
     ui->statusBar->showMessage("Loading full collection...");
 
@@ -285,8 +326,27 @@ void amcpp::loadCollection(){
 }
 
 void amcpp::loadCollectionReply(){
+    saveCollection(reply->readAll());
+    loadCollectionFromFile();
+}
+
+
+void amcpp::loadCollectionFromFile(){
+    ui->artistTree->clear();
+
     QDomDocument e;
-    e.setContent(reply->readAll());
+    QFile* file = getCollectionFile();
+    file->open(QIODevice::ReadOnly);
+
+    if(file->size() == 0){
+        qDebug() << "collection.dat is empty";
+        return;
+    }
+
+    e.setContent(file->readAll());
+
+    //TODO check if DomDocument is correct
+
     int c = 0;
 
     QDomElement el = e.firstChildElement();
@@ -314,7 +374,8 @@ void amcpp::loadCollectionReply(){
 
         QTreeWidgetItem *item = new QTreeWidgetItem;
         item->setText(0, title);
-        item->setText(1, url);
+        item->setText(1, album);
+        item->setText(2, url);
 
         QTreeWidgetItem *Artist, *Album;
         QList<QTreeWidgetItem *> rArtist = ui->artistTree->findItems(artist, Qt::MatchExactly);
@@ -355,7 +416,8 @@ void amcpp::loadCollectionReply(){
         ui->statusBar->showMessage(QString("Scanning %1 songs").arg(c++));
     }
     ui->artistTree->sortItems(0, Qt::AscendingOrder);
-    ui->statusBar->showMessage(QString("Collection loaded. %1 songs.").arg(ui->artistTree->children().count()));
+    ui->statusBar->showMessage(QString("Collection loaded. %1 songs.").arg(c));
+
 }
 
 void amcpp::downloadProgress(qint64 received, qint64 total){
@@ -367,4 +429,59 @@ void amcpp::on_loadCollectionButton_clicked()
     ui->loadCollectionButton->setDisabled(true);
     loadCollection();
     ui->loadCollectionButton->setDisabled(false);
+}
+
+void amcpp::on_searchTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
+{
+    ui->statusBar->showMessage("Added to playlist");
+    QTreeWidgetItem * newitem = new QTreeWidgetItem(
+                QStringList() << item->text(0) << item->text(1) << item->text(2));
+    ui->playlistTree->addTopLevelItem(newitem);
+}
+
+void amcpp::on_artistTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
+{
+    if(item->columnCount() < 3)
+        return
+
+    ui->statusBar->showMessage("Added to playlist");
+    QTreeWidgetItem * newitem = new QTreeWidgetItem(
+                QStringList() << item->text(0) << item->text(1) << item->text(2));
+    ui->playlistTree->addTopLevelItem(newitem);
+
+}
+
+QFile* amcpp::getCollectionFile(){
+
+    //http://labs.qt.nokia.com/2008/02/26/finding-locations-with-qdesktopservices/
+    QString directory = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+    if (directory.isEmpty())
+        directory = QDir::homePath() + "/." + QCoreApplication::applicationName();
+    if (!QFile::exists(directory)) {
+        QDir dir;
+        dir.mkpath(directory);
+    }
+    QFile * file = new QFile(directory + "/collection.dat");
+    return file;
+}
+
+void amcpp::saveCollection(QByteArray data){
+
+    QFile * file = getCollectionFile();
+
+    //
+    //From Network Download Example
+    if (!file->open(QIODevice::WriteOnly)) {
+        fprintf(stderr, "Could not open %s for writing: %s\n",
+                qPrintable(file->fileName()),
+                qPrintable(file->errorString()));
+        return;
+    }
+    //
+
+    file->write(data);
+    file->close();
+
+    delete file;
+
 }
