@@ -62,6 +62,10 @@ private slots:
     void on_searchTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
     void on_artistTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
 
+    void on_nextButton_clicked();
+
+    void on_clearButton_clicked();
+
 private:
     Ui::amcpp *ui;
     Phonon::AudioOutput *audioOutput;

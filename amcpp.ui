@@ -239,7 +239,7 @@
       <x>350</x>
       <y>50</y>
       <width>351</width>
-      <height>321</height>
+      <height>291</height>
      </rect>
     </property>
     <property name="uniformRowHeights">
@@ -272,6 +272,32 @@
       <string>URL</string>
      </property>
     </column>
+   </widget>
+   <widget class="QPushButton" name="clearButton">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>340</y>
+      <width>71</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="nextButton">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>340</y>
+      <width>71</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Next</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -360,12 +386,12 @@
    <slot>click()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>519</x>
-     <y>83</y>
+     <x>245</x>
+     <y>367</y>
     </hint>
     <hint type="destinationlabel">
-     <x>585</x>
-     <y>79</y>
+     <x>327</x>
+     <y>367</y>
     </hint>
    </hints>
   </connection>
@@ -382,6 +408,22 @@
     <hint type="destinationlabel">
      <x>342</x>
      <y>228</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clearButton</sender>
+   <signal>clicked()</signal>
+   <receiver>playlistTree</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>678</x>
+     <y>373</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>269</y>
     </hint>
    </hints>
   </connection>

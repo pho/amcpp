@@ -235,13 +235,6 @@ void amcpp::changeSong(QString str){
     ui->titleLabel->setText(currentTitle + " - " + currentArtist);
     ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000)); //QTime
 
-//    if(lastSongIndex >= 0){
-//        QFont font;
-//        font.setBold(true);
-//        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
-//        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
-//    }
-
 }
 
 void amcpp::stop(){
@@ -484,5 +477,17 @@ void amcpp::saveCollection(QByteArray data){
     file->close();
 
     delete file;
+
+}
+
+void amcpp::on_nextButton_clicked()
+{
+    nextSong();
+}
+
+void amcpp::on_clearButton_clicked()
+{
+    lastSongIndex = -1;
+    ui->playlistTree->clear();
 
 }
