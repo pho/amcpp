@@ -113,15 +113,15 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="page">
      <property name="geometry">
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>311</width>
-       <height>279</height>
+       <width>321</width>
+       <height>285</height>
       </rect>
      </property>
      <attribute name="label">
@@ -135,6 +135,9 @@
         <width>311</width>
         <height>261</height>
        </rect>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::DragOnly</enum>
       </property>
       <column>
        <property name="text">
@@ -161,8 +164,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>311</width>
-       <height>279</height>
+       <width>321</width>
+       <height>285</height>
       </rect>
      </property>
      <attribute name="label">
@@ -176,6 +179,9 @@
         <width>311</width>
         <height>241</height>
        </rect>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::DragOnly</enum>
       </property>
       <property name="uniformRowHeights">
        <bool>true</bool>
@@ -242,6 +248,15 @@
       <height>291</height>
      </rect>
     </property>
+    <property name="acceptDrops">
+     <bool>true</bool>
+    </property>
+    <property name="dragDropMode">
+     <enum>QAbstractItemView::DropOnly</enum>
+    </property>
+    <property name="defaultDropAction">
+     <enum>Qt::CopyAction</enum>
+    </property>
     <property name="uniformRowHeights">
      <bool>true</bool>
     </property>
@@ -306,7 +321,7 @@
      <x>0</x>
      <y>0</y>
      <width>712</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
