@@ -187,7 +187,6 @@ void amcpp::on_playlistTree_itemDoubleClicked(QTreeWidgetItem *item, int /*colum
     if(lastSongIndex >= 0){
         QFont font;
         font.setBold(false);
-        qDebug() << lastSongIndex << "bold false";
         ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
         ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
     }
@@ -197,7 +196,6 @@ void amcpp::on_playlistTree_itemDoubleClicked(QTreeWidgetItem *item, int /*colum
     currentUrl = item->text(2);
 
     lastSongIndex = ui->playlistTree->indexOfTopLevelItem(item);
-    qDebug() << "Clicked index:"  << lastSongIndex;
     changeSong(item->text(2));
 
     play();
@@ -228,8 +226,6 @@ void amcpp::changeSong(QString str){
 
     mediaObject->setTickInterval(1);
 
-    qDebug() << "Next Song:" << str << "totaltime" <<  mediaObject->totalTime();
-
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
     ui->titleLabel->setText(currentTitle + " - " + currentArtist);
@@ -248,20 +244,17 @@ void amcpp::nextSong(){
     if(lastSongIndex >= 0){
         QFont font;
         font.setBold(false);
-        qDebug() << lastSongIndex << "bold false";
         ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
         ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
     }
 
 
     if( ui->playlistTree->topLevelItemCount() > ++lastSongIndex){
-        qDebug() << "next song index: " << lastSongIndex;
 
         currentTitle = ui->playlistTree->topLevelItem(lastSongIndex)->text(0);
         currentArtist = ui->playlistTree->topLevelItem(lastSongIndex)->text(1);
         currentUrl = ui->playlistTree->topLevelItem(lastSongIndex)->text(2);
 
-        qDebug() << "next song url" << currentUrl;
         changeSong(currentUrl);
 
         play();
@@ -281,12 +274,11 @@ void amcpp::on_actionConfigure_triggered()
 }
 
 void amcpp::checkStatus(Phonon::State act , Phonon::State prev){
-    qDebug() << QString("%1 -> %2").arg(prev).arg(act);
+    //qDebug() << QString("States: %1 -> %2").arg(prev).arg(act);
     if (act == Phonon::StoppedState){
         if(lastSongIndex >= 0){
             QFont font;
             font.setBold(false);
-            qDebug() << lastSongIndex << "bold false";
             ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
             ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
         }
@@ -295,7 +287,6 @@ void amcpp::checkStatus(Phonon::State act , Phonon::State prev){
         if(lastSongIndex >= 0){
             QFont font;
             font.setBold(true);
-            qDebug() << "Bold true" << lastSongIndex;
             ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
             ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
         }
