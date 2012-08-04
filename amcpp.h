@@ -83,6 +83,9 @@ private:
 
 
     void amHandshake();
+    void addArtist(QTreeWidgetItem*);
+    void addAlbum(QTreeWidgetItem*);
+    void addSong(QTreeWidgetItem*);
 
 };
 

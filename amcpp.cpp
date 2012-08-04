@@ -357,7 +357,7 @@ void amcpp::loadCollectionFromFile(){
 
         }
 
-        QTreeWidgetItem *item = new QTreeWidgetItem;
+        QTreeWidgetItem *item = new QTreeWidgetItem(1002); //type 1002 == song
         item->setText(0, title);
         item->setText(1, album);
         item->setText(2, url);
@@ -366,7 +366,7 @@ void amcpp::loadCollectionFromFile(){
         QList<QTreeWidgetItem *> rArtist = ui->artistTree->findItems(artist, Qt::MatchExactly);
 
         if(rArtist.count() < 1){
-            Artist = new QTreeWidgetItem(QStringList(artist));
+            Artist = new QTreeWidgetItem(QStringList(artist), 1000); //type 1000 == artist
             ui->artistTree->addTopLevelItem(Artist);
         }
         else{
@@ -393,7 +393,7 @@ void amcpp::loadCollectionFromFile(){
             }
         }
         if (!found){
-            Album = new QTreeWidgetItem(QStringList(album));
+            Album = new QTreeWidgetItem(QStringList(album), 1001); //type 1001 == album
             Album->addChild(item);
             Artist->addChild(Album);
         }
@@ -419,21 +419,48 @@ void amcpp::on_loadCollectionButton_clicked()
 void amcpp::on_searchTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
     ui->statusBar->showMessage("Added to playlist");
-    QTreeWidgetItem * newitem = new QTreeWidgetItem(
-                QStringList() << item->text(0) << item->text(1) << item->text(2));
-    ui->playlistTree->addTopLevelItem(newitem);
+    addSong(item);
 }
 
 void amcpp::on_artistTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
-    if(item->columnCount() < 3)
-        return
+    switch(item->type()){
+        case 1000:
+            addArtist(item);
+            break;
+        case 1001:
+            addAlbum(item);
+            break;
+        case 1002:
+            addSong(item);
+            break;
+        default:
+            qDebug() << "[artistTree_itemDoubleClicked] I dont know what is this.";
+    }
+}
 
-    ui->statusBar->showMessage("Added to playlist");
+void amcpp::addArtist(QTreeWidgetItem* item){
+    if (item->type() != 1000){
+        qDebug() << "This is not an artist item";
+        return;
+    }
+    for(int i = 0; i < item->childCount(); i++)
+        addAlbum(item->child(i));
+}
+
+void amcpp::addAlbum(QTreeWidgetItem* item){
+    if (item->type() != 1001){
+        qDebug() << "This is not an album item";
+        return;
+    }
+    for(int i = 0; i < item->childCount(); i++)
+        addSong(item->child(i));
+}
+
+void amcpp::addSong(QTreeWidgetItem* item){
     QTreeWidgetItem * newitem = new QTreeWidgetItem(
                 QStringList() << item->text(0) << item->text(1) << item->text(2));
     ui->playlistTree->addTopLevelItem(newitem);
-
 }
 
 QFile* amcpp::getCollectionFile(){
