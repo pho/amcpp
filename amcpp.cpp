@@ -461,6 +461,10 @@ void amcpp::addSong(QTreeWidgetItem* item){
     QTreeWidgetItem * newitem = new QTreeWidgetItem(
                 QStringList() << item->text(0) << item->text(1) << item->text(2));
     ui->playlistTree->addTopLevelItem(newitem);
+
+    if(lastSongIndex == -1 && mediaObject->state() != Phonon::PlayingState){
+        nextSong();
+    }
 }
 
 QFile* amcpp::getCollectionFile(){

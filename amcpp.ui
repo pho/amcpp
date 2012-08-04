@@ -401,12 +401,12 @@
    <slot>click()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>245</x>
-     <y>367</y>
+     <x>240</x>
+     <y>391</y>
     </hint>
     <hint type="destinationlabel">
-     <x>327</x>
-     <y>367</y>
+     <x>322</x>
+     <y>392</y>
     </hint>
    </hints>
   </connection>
