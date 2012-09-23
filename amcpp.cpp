@@ -273,7 +273,7 @@ void amcpp::on_actionConfigure_triggered()
         amHandshake();
 }
 
-void amcpp::checkStatus(Phonon::State act , Phonon::State prev){
+void amcpp::checkStatus(Phonon::State act  , Phonon::State prev){
     //qDebug() << QString("States: %1 -> %2").arg(prev).arg(act);
     if (act == Phonon::StoppedState){
         if(lastSongIndex >= 0){
@@ -350,7 +350,7 @@ void amcpp::loadCollectionFromFile(){
 
             if (tag == "url")
                 url = song.childNodes().at(j).toElement().text().replace(
-                            "ssid=.*&", "ssid=" + authToken + "&");
+                            QRegExp("ssid=.*&"), "ssid=" + authToken + "&");
 
             if (tag == "album")
                 album = song.childNodes().at(j).toElement().text();
