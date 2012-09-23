@@ -119,6 +119,7 @@ void amcpp::handshakeReply()
 
     if (e.firstChildElement().firstChildElement().tagName() == "auth"){
         authToken = e.firstChildElement().firstChildElement().text();
+
         ui->statusBar->showMessage("Auth completed!");
         loadCollectionFromFile();
     }
@@ -350,7 +351,8 @@ void amcpp::loadCollectionFromFile(){
 
             if (tag == "url")
                 url = song.childNodes().at(j).toElement().text().replace(
-                            QRegExp("ssid=.*&"), "ssid=" + authToken + "&");
+                            //TODO: This regexp should match the ssid without reference to oid
+                            QRegExp("ssid=.*&oid"), "ssid=" + authToken + "&oid");
 
             if (tag == "album")
                 album = song.childNodes().at(j).toElement().text();
