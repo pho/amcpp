@@ -4,18 +4,21 @@
 #include <QMainWindow>
 #include <QCoreApplication>
 
-#include <phonon/audiooutput.h>
-#include <phonon/seekslider.h>
-#include <phonon/mediaobject.h>
-#include <phonon/volumeslider.h>
-#include <phonon/backendcapabilities.h>
+//#include <phonon/audiooutput.h>
+//#include <phonon/seekslider.h>
+//#include <phonon/mediaobject.h>
+//#include <phonon/volumeslider.h>
+//#include <phonon/backendcapabilities.h>
+
+#include <QtMultimedia/QMediaPlayer>
+#include <QtMultimedia/QMediaPlaylist>
 
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QNetworkReply>
 
 #include <QtXml/QDomDocument>
-#include <QtCrypto/QtCrypto>
+#include <QCryptographicHash>
 #include <QTreeWidgetItem>
 #include <QSettings>
 #include <QFile>
@@ -42,7 +45,7 @@ private slots:
     void changeSong(QString);
     void nextSong();
 
-    void checkStatus(Phonon::State, Phonon::State);
+    void checkStatus( QMediaPlayer::State,  QMediaPlayer::State);
 
     void loadCollection();
     void loadCollectionReply();
@@ -68,9 +71,12 @@ private slots:
 
 private:
     Ui::amcpp *ui;
-    Phonon::AudioOutput *audioOutput;
-    Phonon::MediaObject *mediaObject;
-    Phonon::MediaSource *mediaSource;
+//    Phonon::AudioOutput *audioOutput;
+//    Phonon::MediaObject *mediaObject;
+//    Phonon::MediaSource *mediaSource;
+
+    QMediaPlayer *mediaPlayer;
+    QMediaPlaylist *playlist;
     QNetworkReply *reply;
     QNetworkAccessManager manager;
     QDomDocument domDocument;

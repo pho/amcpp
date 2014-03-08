@@ -4,12 +4,10 @@
 #
 #-------------------------------------------------
 
-QT       += core gui phonon network xml
+QT       += core gui multimedia network xml widgets
 
 TARGET = amcpp
 TEMPLATE = app
-
-LIBS += -lqca
 
 SOURCES += main.cpp\
         amcpp.cpp \

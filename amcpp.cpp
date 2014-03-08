@@ -1,12 +1,17 @@
 #include "amcpp.h"
 #include "ui_amcpp.h"
 #include "configdialog.h"
-#include <phonon/mediaobject.h>
+//#include <phonon/mediaobject.h>
+
+#include <QtMultimedia/QMediaPlayer>
+#include <QtMultimedia/QMediaPlaylist>
+
 #include <QList>
 #include <QFileDialog>
 #include <QDesktopServices>
 #include <cstdlib>
 #include <iostream>
+#include <ctime>
 
 amcpp::amcpp(QWidget *parent) :
     QMainWindow(parent),
@@ -15,28 +20,22 @@ amcpp::amcpp(QWidget *parent) :
     authToken = "noauth";
     lastSongIndex = -1;
 
-    audioOutput = new Phonon::AudioOutput(Phonon::MusicCategory, this);
-
-    mediaObject = new Phonon::MediaObject(this);
-    mediaSource = new Phonon::MediaSource(QString("/home/pho/Music/Eluveitie/Slania/Inis Mona.mp3"));
-    mediaObject->setCurrentSource(*mediaSource);
-
-    Phonon::createPath(mediaObject, audioOutput);
-    audioOutput->setVolume(0.5);
+    mediaPlayer = new QMediaPlayer;
+    mediaPlayer->setVolume(50);
 
     ui->setupUi(this);
 
-    ui->seekSlider->setMediaObject(mediaObject);
-    ui->volumeSlider->setAudioOutput(audioOutput);
+    //ui->seekSlider->setMediaObject(mediaObject);
+    //ui->volumeSlider->setAudioOutput(audioOutput);
 
     amHandshake();
 
-    connect(mediaObject, SIGNAL(finished()), this, SLOT(nextSong()));
+    //connect(mediaObject, SIGNAL(finished()), this, SLOT(nextSong()));
 
  // connect(mediaObject, SIGNAL(totalTimeChanged(qint64)), ui->totalLabel, SLOT(setNum(int)));
 
-    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),
-            this, SLOT(checkStatus(Phonon::State,Phonon::State)));
+//    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),
+//            this, SLOT(checkStatus(Phonon::State,Phonon::State)));
 
 }
 
@@ -59,7 +58,7 @@ void amcpp::changeEvent(QEvent *e)
 
 void amcpp::on_playButton_clicked()
 {
-    if(mediaObject->state() == Phonon::PlayingState){
+    if(mediaPlayer->state() == QMediaPlayer::PlayingState){
         pause();
     }
     else{
@@ -69,45 +68,37 @@ void amcpp::on_playButton_clicked()
 
 void amcpp::amHandshake(){
 
-    QCA::Initializer init;
-
+    QCryptographicHash sha256(QCryptographicHash::Sha256);
     authToken = "noauth";
 
-    if ( !QCA::isSupported("sha256") ){
-        ui->statusBar->showMessage("sha256 is not supported. Exiting...\n");
-        //burn da haus
-        return;
-    }
-    else {
-        ui->statusBar->showMessage("sha256 is supported :D\n");
-        ui->statusBar->showMessage("Creating handshake\n");
+    ui->statusBar->showMessage("Creating handshake\n");
 
-        QSettings settings("amcpp", "amcpp");
+    QSettings settings("amcpp", "amcpp");
 
-        QString amurl = settings.value("amUrl").toString();
-        QString user = settings.value("username").toString();
-        QCA::SecureArray pass(settings.value("streamPass").toByteArray());
+    QString amurl = settings.value("amUrl").toString();
+    QString user = settings.value("username").toString();
 
 
-        //TODO Redo this with SecureArray
+    char key[80];
+    char timestamp[11];
+    snprintf(timestamp, 11, "%ld", time(0));
 
-        char key[80];
-        char timestamp[11];
-        snprintf(timestamp, 11, "%ld", time(0));
+    QString lol(sha256.hash(settings.value("streamPass").toByteArray(), QCryptographicHash::Sha256).toHex());
 
-        QString lol(QCA::Hash("sha256").hash(pass).toByteArray().toHex());
+    snprintf(key, 80, "%s%s", timestamp, qPrintable(lol));
 
-        snprintf(key, 80, "%s%s", timestamp, qPrintable(lol));
+    QString passphrase = sha256.hash(key,QCryptographicHash::Sha256).toHex();
 
-        QString passphrase = QCA::Hash("sha256").hashToString( key );
+    QUrl url( QString("%3/server/xml.server.php?action=handshake&auth=%1&timestamp=%2&version=350001&user=%4").arg(qPrintable(passphrase), timestamp, amurl, user )) ;
 
-        QUrl url( QString("%3/server/xml.server.php?action=handshake&auth=%1&timestamp=%2&version=350001&user=%4").arg(qPrintable(passphrase), timestamp, amurl, user )) ;
-        QNetworkRequest request(url);
-        reply = manager.get(request);
+    qDebug() << url;
 
-        connect(reply, SIGNAL(readyRead()),
-                this, SLOT(handshakeReply()));
-    }
+    QNetworkRequest request(url);
+    reply = manager.get(request);
+
+    connect(reply, SIGNAL(readyRead()),
+            this, SLOT(handshakeReply()));
+
 }
 
 
@@ -117,14 +108,18 @@ void amcpp::handshakeReply()
     QDomDocument e;
     e.setContent(reply->readAll());
 
+    qDebug() << "Got reply";
+
     if (e.firstChildElement().firstChildElement().tagName() == "auth"){
         authToken = e.firstChildElement().firstChildElement().text();
 
         ui->statusBar->showMessage("Auth completed!");
+        qDebug() << "Auth Completed!";
         loadCollectionFromFile();
     }
     else{
         ui->statusBar->showMessage("Auth invalid!!");
+        qDebug() << "Auth Failed!";
         //TODO Disable all
     }
 }
@@ -207,35 +202,33 @@ void amcpp::play(){
     if (lastSongIndex == -1)
         nextSong();
     else {
-        mediaObject->play();
+        mediaPlayer->play();
         ui->playButton->setText("Pause");
     }
 }
 
 
 void amcpp::pause(){
-    mediaObject->pause();
+    mediaPlayer->pause();
     ui->playButton->setText("Play");
 }
 
 void amcpp::changeSong(QString str){
 
-    delete mediaSource;
+    qDebug() << "Media set to" << str;
 
-    mediaSource = new Phonon::MediaSource(str);
-    mediaObject->setCurrentSource(*mediaSource);
-
-    mediaObject->setTickInterval(1);
+    mediaPlayer->setMedia(QUrl(str));
+    mediaPlayer->play();
 
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
     ui->titleLabel->setText(currentTitle + " - " + currentArtist);
-    ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000)); //QTime
+    //ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000)); //QTime
 
 }
 
 void amcpp::stop(){
-    mediaObject->stop();
+    mediaPlayer->stop();
     ui->playButton->setText("Play");
 }
 
@@ -274,9 +267,9 @@ void amcpp::on_actionConfigure_triggered()
         amHandshake();
 }
 
-void amcpp::checkStatus(Phonon::State act  , Phonon::State prev){
+void amcpp::checkStatus(QMediaPlayer::State act, QMediaPlayer::State prev){
     //qDebug() << QString("States: %1 -> %2").arg(prev).arg(act);
-    if (act == Phonon::StoppedState){
+    if (act ==  QMediaPlayer::StoppedState){
         if(lastSongIndex >= 0){
             QFont font;
             font.setBold(false);
@@ -284,7 +277,7 @@ void amcpp::checkStatus(Phonon::State act  , Phonon::State prev){
             ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
         }
     }
-    else if(act == Phonon::PlayingState){
+    else if(act == QMediaPlayer::PlayingState){
         if(lastSongIndex >= 0){
             QFont font;
             font.setBold(true);
@@ -464,7 +457,7 @@ void amcpp::addSong(QTreeWidgetItem* item){
                 QStringList() << item->text(0) << item->text(1) << item->text(2));
     ui->playlistTree->addTopLevelItem(newitem);
 
-    if(lastSongIndex == -1 && mediaObject->state() != Phonon::PlayingState){
+    if(lastSongIndex == -1 && mediaPlayer->state() !=  QMediaPlayer::PlayingState){
         nextSong();
     }
 }
@@ -472,7 +465,8 @@ void amcpp::addSong(QTreeWidgetItem* item){
 QFile* amcpp::getCollectionFile(){
 
     //http://labs.qt.nokia.com/2008/02/26/finding-locations-with-qdesktopservices/
-    QString directory = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+    QString directory = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    qDebug() << directory;
     if (directory.isEmpty())
         directory = QDir::homePath() + "/." + QCoreApplication::applicationName();
     if (!QFile::exists(directory)) {
@@ -480,6 +474,7 @@ QFile* amcpp::getCollectionFile(){
         dir.mkpath(directory);
     }
     QFile * file = new QFile(directory + "/collection.dat");
+    qDebug() << "Getting collection file";
     return file;
 }
 
@@ -487,7 +482,7 @@ void amcpp::saveCollection(QByteArray data){
 
     QFile * file = getCollectionFile();
 
-    //
+
     //From Network Download Example
     if (!file->open(QIODevice::WriteOnly)) {
         fprintf(stderr, "Could not open %s for writing: %s\n",
