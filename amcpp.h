@@ -12,7 +12,7 @@
 
 #include <QtMultimedia/QMediaPlayer>
 #include <QtMultimedia/QMediaPlaylist>
-
+#include <QGraphicsWebView>
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QNetworkReply>

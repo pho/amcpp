@@ -6,6 +6,8 @@
 #include <QtMultimedia/QMediaPlayer>
 #include <QtMultimedia/QMediaPlaylist>
 
+#include <QGraphicsWebView>
+
 #include <QList>
 #include <QFileDialog>
 #include <QDesktopServices>
@@ -31,8 +33,6 @@ amcpp::amcpp(QWidget *parent) :
     //ui->volumeSlider->setAudioOutput(audioOutput);
 
 
-    amHandshake();
-
 
 //    connect(mediaPlayer, SIGNAL(stateChanged(QMediaPlayer::State)),
 //            this, SLOT(checkStatus(QMediaPlayer::State)));
@@ -46,6 +46,8 @@ amcpp::amcpp(QWidget *parent) :
 
     // No funciona bien el seek :/
     //connect(ui->seekSlider, SIGNAL(sliderReleased()), this, SLOT(setSeekPosition()));
+
+    amHandshake();
 }
 
 amcpp::~amcpp()
@@ -92,7 +94,7 @@ void amcpp::amHandshake(){
     char timestamp[11];
     snprintf(timestamp, 11, "%ld", time(0));
 
-    QString lol(sha256.hash(settings.value("streamPass").toByteArray(), QCryptographicHash::Sha256).toHex());
+    QString lol(settings.value("streamPass").toByteArray());
 
     snprintf(key, 80, "%s%s", timestamp, qPrintable(lol));
 
@@ -269,6 +271,11 @@ void amcpp::changeSong(int index){
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
     ui->titleLabel->setText(currentTitle + " - " + currentArtist);
+
+//    QGraphicsWebView art = QGraphicsWebView;
+//    art.load();
+//    ui->graphicsView->setart.graphicsItem();
+
     this->setWindowTitle(currentTitle + " - " + currentArtist);
 
 }
@@ -380,6 +387,7 @@ void amcpp::loadCollectionFromFile(){
 
     if(file->size() == 0){
         qDebug() << "collection.dat is empty";
+        loadCollection();
         return;
     }
 

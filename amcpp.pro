@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui multimedia network xml widgets
+QT       += core gui multimedia network xml widgets webkit webkitwidgets
 
 TARGET = amcpp
 TEMPLATE = app
