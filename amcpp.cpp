@@ -22,21 +22,30 @@ amcpp::amcpp(QWidget *parent) :
 
     mediaPlayer = new QMediaPlayer;
     mediaPlayer->setVolume(50);
+    playlist = new QMediaPlaylist;
+    mediaPlayer->setPlaylist(playlist);
 
     ui->setupUi(this);
 
     //ui->seekSlider->setMediaObject(mediaObject);
     //ui->volumeSlider->setAudioOutput(audioOutput);
 
+
     amHandshake();
 
-    //connect(mediaObject, SIGNAL(finished()), this, SLOT(nextSong()));
 
- // connect(mediaObject, SIGNAL(totalTimeChanged(qint64)), ui->totalLabel, SLOT(setNum(int)));
+//    connect(mediaPlayer, SIGNAL(stateChanged(QMediaPlayer::State)),
+//            this, SLOT(checkStatus(QMediaPlayer::State)));
 
-//    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)),
-//            this, SLOT(checkStatus(Phonon::State,Phonon::State)));
+    connect(playlist, SIGNAL(currentIndexChanged(int)), this, SLOT(changeSong(int)));
 
+    connect(ui->volumeSlider, SIGNAL(sliderMoved(int)), mediaPlayer, SLOT(setVolume(int)));
+    connect(mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
+    connect(mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
+
+
+    // No funciona bien el seek :/
+    //connect(ui->seekSlider, SIGNAL(sliderReleased()), this, SLOT(setSeekPosition()));
 }
 
 amcpp::~amcpp()
@@ -101,6 +110,38 @@ void amcpp::amHandshake(){
 
 }
 
+void amcpp::durationChanged(qint64 d){
+    ui->seekSlider->setMaximum(d/1000);
+    int m;
+    float s;
+    s = d/1000;
+    m = s/60;
+    s = int( ((s/60) - m) * 60 );
+    if(s < 10)
+        ui->totalTime->setText(QString("%1:0%2").arg(m).arg(s));
+    else
+        ui->totalTime->setText(QString("%1:%2").arg(m).arg(s));
+}
+
+void amcpp::positionChanged(qint64 d){
+    ui->seekSlider->setValue(d/1000);
+    int m;
+    float s;
+    s = d/1000;
+    m = s/60;
+    s = int( ((s/60) - m) * 60 );
+    if(s < 10)
+        ui->currTime->setText(QString("%1:0%2").arg(m).arg(s));
+    else
+        ui->currTime->setText(QString("%1:%2").arg(m).arg(s));
+}
+
+void amcpp::setSeekPosition(){
+    if(mediaPlayer->isSeekable())
+        mediaPlayer->setPosition(ui->seekSlider->value());
+    else
+        qDebug() << "Media not seekable";
+}
 
 void amcpp::handshakeReply()
 {
@@ -130,8 +171,8 @@ void amcpp::on_searchButton_clicked()
     QSettings settings("amcpp", "amcpp");
     QString amurl = settings.value("amUrl").toString();
 
-    ui->lineEdit->setDisabled(true);
-    QUrl url( QString("%3/server/xml.server.php?action=search_songs&auth=%1&filter=%2").arg(authToken, ui->lineEdit->text(), amurl)) ;
+    ui->searchEdit->setDisabled(true);
+    QUrl url( QString("%3/server/xml.server.php?action=search_songs&auth=%1&filter=%2").arg(authToken, ui->searchEdit->text(), amurl)) ;
     QNetworkRequest request(url);
     reply = manager.get(request);
 
@@ -173,29 +214,15 @@ void amcpp::searchReply()
         ui->searchTree->addTopLevelItem(item);
     }
 
-    ui->lineEdit->setEnabled(true);
+    ui->searchEdit->setEnabled(true);
 }
+
 
 void amcpp::on_playlistTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
-    stop();
-
-    if(lastSongIndex >= 0){
-        QFont font;
-        font.setBold(false);
-        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
-        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
-    }
-
-    currentTitle = item->text(0);
-    currentArtist = item->text(1);
-    currentUrl = item->text(2);
-
-    lastSongIndex = ui->playlistTree->indexOfTopLevelItem(item);
-    changeSong(item->text(2));
-
+    playlist->setCurrentIndex(ui->playlistTree->indexOfTopLevelItem(item));
     play();
-
+    return;
 }
 
 void amcpp::play(){
@@ -213,17 +240,36 @@ void amcpp::pause(){
     ui->playButton->setText("Play");
 }
 
-void amcpp::changeSong(QString str){
+void amcpp::changeSong(int index){
 
-    qDebug() << "Media set to" << str;
+    qDebug() << "Change song: " << index;
 
-    mediaPlayer->setMedia(QUrl(str));
-    mediaPlayer->play();
+    QTreeWidgetItem* item = ui->playlistTree->topLevelItem(index);
+
+    QFont font;
+    if(lastSongIndex >= 0){
+        font.setBold(false);
+        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(0, font);
+        ui->playlistTree->topLevelItem(lastSongIndex)->setFont(1, font);
+    }
+
+    font.setBold(true);
+    ui->playlistTree->topLevelItem(index)->setFont(0, font);
+    ui->playlistTree->topLevelItem(index)->setFont(1, font);
+
+    lastSongIndex = index;
+
+
+    currentTitle = item->text(0);
+    currentArtist = item->text(1);
+    currentUrl = item->text(2);
+
+    qDebug() << item->text(0);
 
     ui->statusBar->clearMessage();
     ui->statusBar->showMessage(currentTitle + " - " + currentArtist);
     ui->titleLabel->setText(currentTitle + " - " + currentArtist);
-    //ui->totalLabel->setText(QString("%1").arg((float) mediaObject->totalTime()/60000)); //QTime
+    this->setWindowTitle(currentTitle + " - " + currentArtist);
 
 }
 
@@ -232,7 +278,19 @@ void amcpp::stop(){
     ui->playButton->setText("Play");
 }
 
+void amcpp::prevSong(){
+    mediaPlayer->playlist()->previous();
+    mediaPlayer->play();
+    return;
+}
+
 void amcpp::nextSong(){
+
+    mediaPlayer->playlist()->next();
+    play();
+    return;
+
+
     stop();
 
     if(lastSongIndex >= 0){
@@ -249,7 +307,7 @@ void amcpp::nextSong(){
         currentArtist = ui->playlistTree->topLevelItem(lastSongIndex)->text(1);
         currentUrl = ui->playlistTree->topLevelItem(lastSongIndex)->text(2);
 
-        changeSong(currentUrl);
+        changeSong(lastSongIndex);
 
         play();
     }
@@ -267,8 +325,8 @@ void amcpp::on_actionConfigure_triggered()
         amHandshake();
 }
 
-void amcpp::checkStatus(QMediaPlayer::State act, QMediaPlayer::State prev){
-    //qDebug() << QString("States: %1 -> %2").arg(prev).arg(act);
+void amcpp::checkStatus(QMediaPlayer::State act){
+    qDebug() << QString("State: %1").arg(act);
     if (act ==  QMediaPlayer::StoppedState){
         if(lastSongIndex >= 0){
             QFont font;
@@ -291,6 +349,11 @@ void amcpp::loadCollection(){
 
     ui->statusBar->showMessage("Loading full collection...");
 
+    ui->tabWidget->setEnabled(false);
+    ui->artistTree->setEnabled(false);
+    ui->searchTree->setEnabled(false);
+
+
     QSettings settings("amcpp", "amcpp");
     QString amurl = settings.value("amUrl").toString();
 
@@ -307,7 +370,6 @@ void amcpp::loadCollectionReply(){
     saveCollection(reply->readAll());
     loadCollectionFromFile();
 }
-
 
 void amcpp::loadCollectionFromFile(){
     ui->artistTree->clear();
@@ -393,23 +455,21 @@ void amcpp::loadCollectionFromFile(){
             Artist->addChild(Album);
         }
 
-        ui->statusBar->showMessage(QString("Scanning %1 songs").arg(c++));
+
+        if(++c%100 == 0)
+            ui->statusBar->showMessage(QString("Scanning %1 songs").arg(c));
     }
     ui->artistTree->sortItems(0, Qt::AscendingOrder);
     ui->statusBar->showMessage(QString("Collection loaded. %1 songs.").arg(c));
-
+    ui->tabWidget->setEnabled(true);
+    ui->artistTree->setEnabled(true);
+    ui->searchTree->setEnabled(true);
 }
 
 void amcpp::downloadProgress(qint64 received, qint64 total){
     ui->statusBar->showMessage(QString("Downloading collection... %1 / %2").arg(received/1024).arg(total));
 }
 
-void amcpp::on_loadCollectionButton_clicked()
-{
-    ui->loadCollectionButton->setDisabled(true);
-    loadCollection();
-    ui->loadCollectionButton->setDisabled(false);
-}
 
 void amcpp::on_searchTree_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
@@ -456,6 +516,8 @@ void amcpp::addSong(QTreeWidgetItem* item){
     QTreeWidgetItem * newitem = new QTreeWidgetItem(
                 QStringList() << item->text(0) << item->text(1) << item->text(2));
     ui->playlistTree->addTopLevelItem(newitem);
+
+    playlist->addMedia(QMediaContent(QUrl(item->text(2))));
 
     if(lastSongIndex == -1 && mediaPlayer->state() !=  QMediaPlayer::PlayingState){
         nextSong();
@@ -508,5 +570,16 @@ void amcpp::on_clearButton_clicked()
 {
     lastSongIndex = -1;
     ui->playlistTree->clear();
+    mediaPlayer->playlist()->clear();
 
+}
+
+void amcpp::on_prevButton_clicked()
+{
+    prevSong();
+}
+
+void amcpp::on_stopButton_clicked()
+{
+    stop();
 }

@@ -42,10 +42,14 @@ private slots:
     void play();
     void pause();
     void stop();
-    void changeSong(QString);
+    void changeSong(int);
     void nextSong();
+    void prevSong();
 
-    void checkStatus( QMediaPlayer::State,  QMediaPlayer::State);
+    void checkStatus(QMediaPlayer::State);
+    void durationChanged(qint64);
+    void positionChanged(qint64);
+    void setSeekPosition();
 
     void loadCollection();
     void loadCollectionReply();
@@ -60,7 +64,6 @@ private slots:
 
     void on_playlistTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
     void on_actionConfigure_triggered();
-    void on_loadCollectionButton_clicked();
 
     void on_searchTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
     void on_artistTree_itemDoubleClicked(QTreeWidgetItem *item, int column);
@@ -68,6 +71,10 @@ private slots:
     void on_nextButton_clicked();
 
     void on_clearButton_clicked();
+
+    void on_prevButton_clicked();
+
+    void on_stopButton_clicked();
 
 private:
     Ui::amcpp *ui;
